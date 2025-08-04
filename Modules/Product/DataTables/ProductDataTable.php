@@ -15,13 +15,18 @@ class ProductDataTable extends DataTable
     public function dataTable($query)
     {
         return datatables()
-            ->eloquent($query)->with('category')
+            ->eloquent($query)
             ->addColumn('action', function ($data) {
                 return view('product::products.partials.actions', compact('data'));
             })
             ->addColumn('product_image', function ($data) {
-                $url = $data->getFirstMediaUrl('images', 'thumb');
-                return '<img src="'.$url.'" border="0" width="50" class="img-thumbnail" align="center"/>';
+                // Cek jika produk punya gambar
+                if ($data->hasMedia('images')) {
+                    $url = $data->getFirstMediaUrl('images', 'thumb');
+                    return '<img src="' . $url . '" border="0" width="50" class="img-thumbnail" align="center"/>';
+                }
+                // Tampilkan gambar placeholder jika tidak ada
+                return '<img src="/images/fallback_product_image.png" border="0" width="50" class="img-thumbnail" align="center"/>';
             })
             ->addColumn('product_price', function ($data) {
                 return format_currency($data->product_price);
@@ -32,12 +37,16 @@ class ProductDataTable extends DataTable
             ->addColumn('product_quantity', function ($data) {
                 return $data->product_quantity . ' ' . $data->product_unit;
             })
-            ->rawColumns(['product_image']);
+            ->addColumn('category_name', function ($data) {
+                // Panggil nama kategori dari relasi yang sudah di-load
+                return $data->category->category_name;
+            })
+            ->rawColumns(['product_image','action']);
     }
 
-    public function query(Product $model)
-    {
-        return $model->newQuery()->with('category');
+    public function query(Product $model) {
+        // Muat relasi category DAN media secara efisien
+        return $model->newQuery()->with(['category', 'media']);
     }
 
     public function html()
@@ -67,6 +76,9 @@ class ProductDataTable extends DataTable
         return [
             Column::computed('product_image')
                 ->title('Image')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
                 ->className('text-center align-middle'),
 
             Column::make('category.category_name')

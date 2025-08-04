@@ -14,7 +14,12 @@
     <div class="container-fluid mb-4">
         <div class="row mb-3">
             <div class="col-md-12">
-                {!! \Milon\Barcode\Facades\DNS1DFacade::getBarCodeSVG($product->product_code, $product->product_barcode_symbology, 2, 110) !!}
+                {!! \Milon\Barcode\Facades\DNS1DFacade::getBarCodeSVG(
+                    $product->product_code,
+                    $product->product_barcode_symbology,
+                    2,
+                    110,
+                ) !!}
             </div>
         </div>
         <div class="row">
@@ -69,7 +74,7 @@
                                 <tr>
                                     <th>Tax Type</th>
                                     <td>
-                                        @if($product->product_tax_type == 1)
+                                        @if ($product->product_tax_type == 1)
                                             Exclusive
                                         @elseif($product->product_tax_type == 2)
                                             Inclusive
@@ -91,17 +96,16 @@
             <div class="col-lg-3">
                 <div class="card h-100">
                     <div class="card-body">
-                        @forelse($product->getMedia('images') as $media)
-                            <img src="{{ $media->getUrl() }}" alt="Product Image" class="img-fluid img-thumbnail mb-2">
-                        @empty
-                            <img src="{{ $product->getFirstMediaUrl('images') }}" alt="Product Image" class="img-fluid img-thumbnail mb-2">
-                        @endforelse
+                        @if ($product->hasMedia('images'))
+                            <img src="{{ $product->getFirstMediaUrl('images') }}" alt="{{ $product->product_name }}"
+                                class="img-fluid img-thumbnail mb-2">
+                        @else
+                            <img src="{{ $product->getFirstMediaUrl('images') }}" alt="Product Image"
+                                class="img-fluid img-thumbnail mb-2">
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 @endsection
-
-
-

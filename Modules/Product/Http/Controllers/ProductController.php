@@ -12,6 +12,8 @@ use Modules\Product\Entities\Product;
 use Modules\Product\Http\Requests\StoreProductRequest;
 use Modules\Product\Http\Requests\UpdateProductRequest;
 use Modules\Upload\Entities\Upload;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -31,18 +33,30 @@ class ProductController extends Controller
 
 
     public function store(StoreProductRequest $request) {
+
+
         $product = Product::create($request->except('document'));
+
 
         if ($request->has('document')) {
             foreach ($request->input('document', []) as $file) {
-                // Pindahkan file dari folder sementara ke folder permanen
-                Storage::disk('public')->move($file, 'products/' . basename($file));
+                $tempFilePath = storage_path('app/public/temp/dropzone/' . $file);
 
-                // Daftarkan file ke media library dengan path yang sudah benar
-                $product->addMedia(storage_path('app/public/products/' . basename($file)))
-                        ->toMediaCollection('images');
+                if (file_exists($tempFilePath)) {
+                    $newFileName = Str::slug($product->product_name) . '_' . time() . '.' . pathinfo($file, PATHINFO_EXTENSION);
+
+                    $product->addMedia($tempFilePath)
+                            ->usingFileName($newFileName)
+                            ->toMediaCollection('images');
+                }
             }
         }
+
+        // if ($request->has('document')) {
+        //     foreach ($request->input('document', []) as $file) {
+        //         $product->addMedia(Storage::path('temp/dropzone/' . $file))->toMediaCollection('images');
+        //     }
+        // }
 
         toast('Product Created!', 'success');
 
@@ -68,6 +82,7 @@ class ProductController extends Controller
         $product->update($request->except('document'));
 
         if ($request->has('document')) {
+            // Logika untuk menghapus gambar lama yang tidak ada di request baru
             if (count($product->getMedia('images')) > 0) {
                 foreach ($product->getMedia('images') as $media) {
                     if (!in_array($media->file_name, $request->input('document', []))) {
@@ -76,11 +91,20 @@ class ProductController extends Controller
                 }
             }
 
+            // Logika untuk menambah gambar baru
             $media = $product->getMedia('images')->pluck('file_name')->toArray();
-
             foreach ($request->input('document', []) as $file) {
+                // Hanya tambahkan file jika belum ada di koleksi media
                 if (count($media) === 0 || !in_array($file, $media)) {
-                    $product->addMedia(Storage::path('temp/dropzone/' . $file))->toMediaCollection('images');
+                    $tempFilePath = storage_path('app/public/temp/dropzone/' . $file);
+
+                    if (file_exists($tempFilePath)) {
+                        $newFileName = Str::slug($product->product_name) . '_' . time() . '.' . pathinfo($file, PATHINFO_EXTENSION);
+
+                        $product->addMedia($tempFilePath)
+                                ->usingFileName($newFileName)
+                                ->toMediaCollection('images');
+                    }
                 }
             }
         }

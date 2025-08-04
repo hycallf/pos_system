@@ -8,6 +8,8 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Modules\Upload\Entities\Upload;
+use Illuminate\Support\Facades\Log;
+
 
 class UploadController extends Controller
 {
@@ -53,7 +55,7 @@ class UploadController extends Controller
 
         $filename = now()->timestamp . '.' . trim($file->getClientOriginalExtension());
 
-        Storage::putFileAs('temp/dropzone/', $file, $filename);
+        Storage::disk('public')->putFileAs('temp/dropzone/', $file, $filename);
 
         return response()->json([
             'name'          => $filename,
@@ -62,7 +64,7 @@ class UploadController extends Controller
     }
 
     public function dropzoneDelete(Request $request) {
-        Storage::delete('temp/dropzone/' . $request->file_name);
+        Storage::disk('public')->delete('temp/dropzone/' . $request->file_name);
 
         return response()->json($request->file_name, 200);
     }
