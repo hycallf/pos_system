@@ -3,6 +3,7 @@
 namespace App\Livewire\Reports;
 
 use Livewire\Component;
+use Illuminate\Support\Facades\Log;
 use Modules\Expense\Entities\Expense;
 use Modules\Purchase\Entities\Purchase;
 use Modules\Purchase\Entities\PurchasePayment;
@@ -12,6 +13,7 @@ use Modules\Sale\Entities\Sale;
 use Modules\Sale\Entities\SalePayment;
 use Modules\SalesReturn\Entities\SaleReturn;
 use Modules\SalesReturn\Entities\SaleReturnPayment;
+
 
 class ProfitLossReport extends Component
 {
@@ -163,10 +165,12 @@ class ProfitLossReport extends Component
 
         foreach ($sales as $sale) {
             foreach ($sale->saleDetails as $saleDetail) {
-                $product_costs += $saleDetail->product->product_cost;
+                $product_costs += $saleDetail->product->product_cost * $saleDetail->quantity;
+                // Log::alert("Product Cost: " . $saleDetail->product->product_cost . " for Sale ID: " . $sale->id);
             }
         }
-
+        Log::alert("Total Revenue: " . $revenue);
+        Log::alert("Total Product Costs: " . $product_costs);
         $profit = $revenue - $product_costs;
 
         return $profit;

@@ -19,6 +19,7 @@ Route::group(['middleware' => 'auth'], function () {
     //General Settings
     Route::get('/settings', 'SettingController@index')->name('settings.index');
     Route::patch('/settings', 'SettingController@update')->name('settings.update');
+    Route::post('/settings/update-logo', 'SettingController@updateLogo')->name('settings.update.logo');
     // Units
     Route::resource('units', 'UnitsController')->except('show');
 });

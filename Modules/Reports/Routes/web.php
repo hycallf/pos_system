@@ -12,6 +12,12 @@
 */
 
 Route::group(['middleware' => 'auth'], function () {
+
+    Route::get('/sales-report', 'ReportsController@salesByUser')->name('reports.sales.summary');
+    Route::get('/sales-report/details', 'ReportsController@salesReport')->name('reports.sales.details');
+    Route::get('/sales-report/pdf', 'ReportsController@downloadSalesSummaryPdf')->name('reports.sales.summary.pdf');
+    Route::get('/sales-report/details/pdf', 'ReportsController@downloadSalesDetailsPdf')->name('reports.sales.details.pdf');
+
     //Profit Loss Report
     Route::get('/profit-loss-report', 'ReportsController@profitLossReport')
         ->name('profit-loss-report.index');
@@ -19,8 +25,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/payments-report', 'ReportsController@paymentsReport')
         ->name('payments-report.index');
     //Sales Report
-    Route::get('/sales-report', 'ReportsController@salesReport')
-        ->name('sales-report.index');
+    // Route::get('/sales-report', 'ReportsController@salesReport')
+    //     ->name('sales-report.index');
     //Purchases Report
     Route::get('/purchases-report', 'ReportsController@purchasesReport')
         ->name('purchases-report.index');

@@ -1,5 +1,9 @@
 @extends('layouts.app')
-
+@push('page_css')
+    {{-- Filepond CSS --}}
+    <link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet">
+@endpush
 @section('title', 'Edit Settings')
 
 @section('breadcrumb')
@@ -11,6 +15,21 @@
 
 @section('content')
     <div class="container-fluid">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">Upload Logo Perusahaan</h5>
+                <form action="{{ route('settings.update.logo') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="form-group">
+                        <label for="company_logo">Logo Baru (Format: .png, Max: 1MB)</label>
+                        <input type="file" id="company_logo" name="company_logo" class="filepond" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> Simpan Logo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <div class="row">
             <div class="col-lg-12">
                 @include('utils.alerts')
@@ -69,7 +88,8 @@
                                             class="form-control" required>
                                             <option {{ $settings->default_currency_position == 'prefix' ? 'selected' : '' }}
                                                 value="prefix">Prefix</option>
-                                            <option {{ $settings->default_currency_position == 'suffix' ? 'selected' : '' }}
+                                            <option
+                                                {{ $settings->default_currency_position == 'suffix' ? 'selected' : '' }}
                                                 value="suffix">Suffix</option>
                                         </select>
                                     </div>
@@ -349,6 +369,17 @@
                 // Terapkan fungsi ke masing-masing input
                 togglePassword('#midtrans_client_key', '#toggle-client-key');
                 togglePassword('#midtrans_server_key', '#toggle-server-key');
+            });
+        </script>
+        <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+        <script src="https://unpkg.com/filepond/dist/filepond.js"></script>
+        <script>
+            // Inisialisasi Filepond
+            FilePond.registerPlugin(FilePondPluginImagePreview);
+            const inputElement = document.querySelector('input[id="company_logo"]');
+            const pond = FilePond.create(inputElement, {
+                acceptedFileTypes: ['image/png'],
+                labelIdle: `Seret & Lepas file Anda atau <span class="filepond--label-action"> Telusuri </span>`
             });
         </script>
     @endpush

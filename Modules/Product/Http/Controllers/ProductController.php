@@ -35,7 +35,12 @@ class ProductController extends Controller
 
         if ($request->has('document')) {
             foreach ($request->input('document', []) as $file) {
-                $product->addMedia(Storage::path('temp/dropzone/' . $file))->toMediaCollection('images');
+                // Pindahkan file dari folder sementara ke folder permanen
+                Storage::disk('public')->move($file, 'products/' . basename($file));
+
+                // Daftarkan file ke media library dengan path yang sudah benar
+                $product->addMedia(storage_path('app/public/products/' . basename($file)))
+                        ->toMediaCollection('images');
             }
         }
 

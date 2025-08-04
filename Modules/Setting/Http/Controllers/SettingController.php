@@ -42,6 +42,22 @@ class SettingController extends Controller
         return redirect()->route('settings.index');
     }
 
+    public function updateLogo(Request $request)
+    {
+        $request->validate([
+            'company_logo' => 'required|image|mimes:png|max:1024' // Max 1MB
+        ]);
+
+        if ($request->hasFile('company_logo')) {
+            $logo = $request->file('company_logo');
+            // Simpan dengan menimpa logo lama
+            $logo->move(public_path('images'), 'logo.png');
+
+            toast('Logo berhasil diupdate!', 'success');
+        }
+
+        return redirect()->route('settings.index');
+    }
 
     public function updateSmtp(StoreSmtpSettingsRequest $request) {
         $toReplace = array(

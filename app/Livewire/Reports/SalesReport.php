@@ -5,6 +5,8 @@ namespace App\Livewire\Reports;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Modules\Sale\Entities\Sale;
+use App\Models\User;
+use Modules\People\Entities\Customer;
 
 class SalesReport extends Component
 {
@@ -19,19 +21,33 @@ class SalesReport extends Component
     public $customer_id;
     public $sale_status;
     public $payment_status;
+    public $users;
+    public $user_id;
+    public $month;
+    public $year;
 
     protected $rules = [
         'start_date' => 'required|date|before:end_date',
         'end_date'   => 'required|date|after:start_date',
     ];
 
-    public function mount($customers) {
+    public function mount($customers, $userId = null, $month = null, $year = null) {
         $this->customers = $customers;
-        $this->start_date = today()->subDays(30)->format('Y-m-d');
-        $this->end_date = today()->format('Y-m-d');
         $this->customer_id = '';
         $this->sale_status = '';
         $this->payment_status = '';
+        $this->users = User::all();
+        $this->user_id = $userId;
+
+        // Atur tanggal berdasarkan filter yang diterima
+        if ($month && $year) {
+            $this->start_date = \Carbon\Carbon::createFromDate($year, $month, 1)->format('Y-m-d');
+            $this->end_date = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->format('Y-m-d');
+        } else {
+            // Default jika tidak ada filter
+            $this->start_date = today()->subDays(30)->format('Y-m-d');
+            $this->end_date = today()->format('Y-m-d');
+        }
     }
 
     public function render() {
@@ -39,6 +55,9 @@ class SalesReport extends Component
             ->whereDate('date', '<=', $this->end_date)
             ->when($this->customer_id, function ($query) {
                 return $query->where('customer_id', $this->customer_id);
+            })
+            ->when($this->user_id, function ($query) {
+                return $query->where('user_id', $this->user_id);
             })
             ->when($this->sale_status, function ($query) {
                 return $query->where('status', $this->sale_status);
