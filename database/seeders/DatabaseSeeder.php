@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Currency\Database\Seeders\CurrencyDatabaseSeeder;
 use Modules\Product\Database\Seeders\ProductDatabaseSeeder;
 use Modules\Setting\Database\Seeders\SettingDatabaseSeeder;
+use Modules\People\Database\Seeders\PeopleDatabaseSeeder;
 use Modules\User\Database\Seeders\PermissionsTableSeeder;
 
 class DatabaseSeeder extends Seeder
@@ -22,5 +23,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencyDatabaseSeeder::class);
         $this->call(SettingDatabaseSeeder::class);
         $this->call(ProductDatabaseSeeder::class);
+        $this->call(PeopleDatabaseSeeder::class);
     }
 }

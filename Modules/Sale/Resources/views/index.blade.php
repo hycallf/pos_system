@@ -39,7 +39,7 @@
     {!! $dataTable->scripts() !!}
 
     {{-- Tambahkan script Midtrans dan listener di sini --}}
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}">
+    {{-- <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}">
     </script>
     <script>
         // Pastikan event listener ditambahkan setelah datatable selesai digambar
@@ -68,5 +68,5 @@
                 alert('Snap token tidak ditemukan!');
             }
         });
-    </script>
+    </script> --}}
 @endpush

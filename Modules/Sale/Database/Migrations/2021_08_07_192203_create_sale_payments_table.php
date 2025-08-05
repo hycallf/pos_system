@@ -17,7 +17,7 @@ class CreateSalePaymentsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('sale_id');
             $table->integer('amount');
-            $table->date('date');
+            $table->dateTime('date');
             $table->string('reference');
             $table->string('payment_method');
             $table->text('note')->nullable();

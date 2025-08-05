@@ -17,6 +17,7 @@ class SalesDataTable extends DataTable
     public function dataTable($query) {
         return datatables()
             ->eloquent($query)
+
             ->addColumn('total_amount', function ($data) {
                 return format_currency($data->total_amount);
             })
@@ -69,7 +70,9 @@ class SalesDataTable extends DataTable
         return [
             Column::make('reference')
                 ->className('text-center align-middle'),
-
+            Column::make('date')
+                ->title('Tanggal')
+                ->className('text-center align-middle'),
             Column::make('customer_name')
                 ->title('Customer')
                 ->className('text-center align-middle'),

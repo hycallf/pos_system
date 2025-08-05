@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Setting\Entities\Setting;
 use Modules\Setting\Http\Requests\StoreSettingsRequest;
 use Modules\Setting\Http\Requests\StoreSmtpSettingsRequest;
+use Modules\Setting\Http\Requests\StoreMidtransSettingsRequest;
 
 class SettingController extends Controller
 {
@@ -95,7 +96,7 @@ class SettingController extends Controller
     }
 
 
-    public function updateMidtrans(Request $request) {
+    public function updateMidtrans(StoreMidtransSettingsRequest $request) {
         $toReplace = array(
             'MIDTRANS_ENVIRONMENT='.env('MIDTRANS_ENVIRONMENT'),
             'MIDTRANS_SERVER_KEY="'.env('MIDTRANS_SERVER_KEY').'"',

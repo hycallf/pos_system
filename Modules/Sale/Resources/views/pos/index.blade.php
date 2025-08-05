@@ -38,6 +38,63 @@
             window.addEventListener('showCheckoutModal', event => {
                 $('#checkoutModal').modal('show');
             });
+
+            $('#checkout-form').on('submit', function() {
+                // e.preventDefault();
+
+                // var total_amount = $('#total_amount').maskMoney('unmasked')[0];
+                // $('#total_amount').val(total_amount);
+
+                // if ($('#paid_amount').length) {
+                //     var paid_amount = $('#paid_amount').maskMoney('unmasked')[0];
+                //     $('#paid_amount').val(paid_amount);
+                // }
+
+                var formData = $(this).serialize();
+                var submitButton = $(this).find('button[type="submit"]');
+                submitButton.prop('disabled', true).text('Processing...');
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.snap_token) {
+                            $('#checkoutModal').modal('hide');
+                            snap.pay(response.snap_token, {
+                                onSuccess: function(result) {
+                                    alert("Pembayaran berhasil!");
+                                    let sale_id = result.order_id.split('-')[1];
+                                    window.location.href = "/sales/pos/pdf/" +
+                                        sale_id;
+                                },
+                                onPending: function(result) {
+                                    alert("Menunggu pembayaran Anda!");
+                                    location.reload();
+                                },
+                                onError: function(result) {
+                                    alert("Pembayaran Gagal!");
+                                    submitButton.prop('disabled', false).text(
+                                        'Submit');
+                                },
+                                onClose: function() {
+                                    alert(
+                                        'Anda menutup popup tanpa menyelesaikan pembayaran.');
+                                    submitButton.prop('disabled', false).text(
+                                        'Submit');
+                                }
+                            });
+                        } else if (response.redirect_url) {
+                            window.location.href = response.redirect_url;
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Terjadi kesalahan. Silakan cek console.');
+                        console.log(xhr.responseText);
+                        submitButton.prop('disabled', false).text('Submit');
+                    }
+                });
+            });
         });
     </script>
 

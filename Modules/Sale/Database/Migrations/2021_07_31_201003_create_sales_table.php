@@ -15,7 +15,7 @@ class CreateSalesTable extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->date('date');
+            $table->dateTime('date');
             $table->string('reference');
             $table->unsignedBigInteger('customer_id')->nullable();
             $table->string('customer_name');
