@@ -82,8 +82,8 @@ return [
      * Here you can specify which path generator should be used for the given class.
      */
     'custom_path_generators' => [
-        \Modules\Product\Entities\Product::class => \App\Support\ProductPathGenerator::class,
-        \App\Models\User::class => \App\Support\UserPathGenerator::class,
+        // \Modules\Product\Entities\Product::class => \App\Support\ProductPathGenerator::class,
+        // \App\Models\User::class => \App\Support\UserPathGenerator::class,
         // Model::class => PathGenerator::class
         // or
         // 'model_morph_alias' => PathGenerator::class

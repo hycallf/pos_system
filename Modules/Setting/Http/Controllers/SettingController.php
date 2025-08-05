@@ -45,11 +45,11 @@ class SettingController extends Controller
     public function updateLogo(Request $request)
     {
         $request->validate([
-            'company_logo' => 'required|image|mimes:png|max:1024' // Max 1MB
+            'site_logo' => 'required|image|mimes:png|max:1024' // Max 1MB
         ]);
 
-        if ($request->hasFile('company_logo')) {
-            $logo = $request->file('company_logo');
+        if ($request->hasFile('site_logo')) {
+            $logo = $request->file('site_logo');
             // Simpan dengan menimpa logo lama
             $logo->move(public_path('images'), 'logo.png');
 
