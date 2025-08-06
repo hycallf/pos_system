@@ -39,17 +39,8 @@
                 $('#checkoutModal').modal('show');
             });
 
-            $('#checkout-form').on('submit', function() {
-                // e.preventDefault();
-
-                // var total_amount = $('#total_amount').maskMoney('unmasked')[0];
-                // $('#total_amount').val(total_amount);
-
-                // if ($('#paid_amount').length) {
-                //     var paid_amount = $('#paid_amount').maskMoney('unmasked')[0];
-                //     $('#paid_amount').val(paid_amount);
-                // }
-
+            $('#checkout-form').on('submit', function(e) {
+                e.preventDefault();
                 var formData = $(this).serialize();
                 var submitButton = $(this).find('button[type="submit"]');
                 submitButton.prop('disabled', true).text('Processing...');
@@ -64,9 +55,16 @@
                             snap.pay(response.snap_token, {
                                 onSuccess: function(result) {
                                     alert("Pembayaran berhasil!");
+                                    // 1. Ambil sale_id dari order_id yang dikembalikan Midtrans
                                     let sale_id = result.order_id.split('-')[1];
-                                    window.location.href = "/sales/pos/pdf/" +
-                                        sale_id;
+
+                                    // 2. Buat URL untuk invoice dan halaman utama
+                                    let printUrl = `/sales/pos/receipt/${sale_id}`;
+                                    let redirectUrl = "{{ route('sales.index') }}";
+
+                                    // 3. Buka invoice di tab baru dan redirect halaman utama
+                                    window.open(printUrl, '_blank');
+                                    window.location.href = redirectUrl;
                                 },
                                 onPending: function(result) {
                                     alert("Menunggu pembayaran Anda!");
@@ -79,12 +77,14 @@
                                 },
                                 onClose: function() {
                                     alert(
-                                        'Anda menutup popup tanpa menyelesaikan pembayaran.');
+                                        'Anda menutup popup tanpa menyelesaikan pembayaran.'
+                                    );
                                     submitButton.prop('disabled', false).text(
                                         'Submit');
                                 }
                             });
-                        } else if (response.redirect_url) {
+                        } else if (response.print_url && response.redirect_url) {
+                            window.open(response.print_url, '_blank');
                             window.location.href = response.redirect_url;
                         }
                     },
@@ -95,34 +95,6 @@
                     }
                 });
             });
-        });
-    </script>
-
-
-    <script>
-        // Listener untuk event dari Livewire
-        window.addEventListener('open-midtrans-snap', event => {
-            snap.pay(event.detail.token, {
-                onSuccess: function(result) {
-                    alert("Pembayaran berhasil!");
-                    // Beritahu Livewire bahwa pembayaran sukses untuk proses selanjutnya
-                    Livewire.emit('paymentSuccess', result);
-                },
-                onPending: function(result) {
-                    alert("Menunggu pembayaran Anda!");
-                    // Anda bisa emit event 'paymentPending' jika perlu
-                },
-                onError: function(result) {
-                    alert("Pembayaran Gagal!");
-                },
-                onClose: function() {
-                    console.log('Anda menutup popup tanpa menyelesaikan pembayaran');
-                }
-            });
-        });
-
-        window.addEventListener('error', event => {
-            alert(event.detail.message);
         });
     </script>
 @endpush

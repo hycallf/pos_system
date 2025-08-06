@@ -27,7 +27,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/payment-flow/chart-data', 'HomeController@paymentChart')
         ->name('payment-flow.chart');
 
-    Route::post('/midtrans/notification', [MidtransWebhookController::class, 'handle']);
-});
+    });
 
+Route::post('/midtrans/notification', [MidtransWebhookController::class, 'handle']);
 

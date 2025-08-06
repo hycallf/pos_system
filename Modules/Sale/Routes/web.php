@@ -14,8 +14,8 @@
 Route::group(['middleware' => 'auth'], function () {
 
     //POS
-    Route::get('/app/pos', 'PosController@index')->name('app.pos.index');
-    Route::post('/app/pos', 'PosController@store')->name('app.pos.store');
+    Route::get('/sales/pos', 'PosController@index')->name('sales.pos.index');
+    Route::post('/sales/pos', 'PosController@store')->name('sales.pos.store');
 
     //Generate PDF
     Route::get('/sales/pdf/{id}', function ($id) {
@@ -44,6 +44,7 @@ Route::group(['middleware' => 'auth'], function () {
         return $pdf->stream('sale-'. $sale->reference .'.pdf');
     })->name('sales.pos.pdf');
 
+    Route::get('/sales/pos/receipt/{id}', 'PosController@printReceipt')->name('sales.pos.receipt');
     //Sales
     Route::resource('sales', 'SaleController');
 

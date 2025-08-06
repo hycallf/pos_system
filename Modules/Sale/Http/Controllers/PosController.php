@@ -7,6 +7,7 @@ use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\People\Entities\Customer;
 use Modules\Product\Entities\Category;
 use Modules\Product\Entities\Product;
@@ -33,45 +34,51 @@ class PosController extends Controller
 
 
     public function store(StorePosSaleRequest $request) {
-        DB::transaction(function () use ($request) {
-            // Langkah 1: Selalu buat data Penjualan (Sale) terlebih dahulu
+
+        return DB::transaction(function () use ($request) {
+            // -- AKHIR PERBAIKAN --
+            // Langkah 1: Buat SATU data Penjualan (Sale) dengan status awal Unpaid
             $sale = Sale::create([
-                'date' => now(), // Simpan tanggal dan waktu lengkap
-                'reference' => 'PSL',
-                'customer_id' => $request->customer_id,
-                'user_id' => auth()->user()->id,
-                'customer_name' => Customer::findOrFail($request->customer_id)->customer_name,
-                'tax_percentage' => $request->tax_percentage,
+                'date'              => now(), // Menyimpan tanggal dan waktu
+                'reference'         => 'PSL', // Sebaiknya digenerate unik
+                'customer_id'       => $request->customer_id,
+                'customer_name'     => Customer::find($request->customer_id)->customer_name,
+                'total_amount'      => $request->total_amount * 100,
+                'paid_amount'       => 0, // Set paid_amount ke 0 dulu
+                'due_amount'        => $request->total_amount * 100,
+                'status'            => 'Pending', // Status ordernya
+                'payment_status'    => 'Unpaid', // Status pembayarannya
+                'payment_method'    => $request->payment_method,
+                'user_id'           => auth()->user()->id,
+                'tax_percentage'      => $request->tax_percentage,
+                'tax_amount'          => Cart::instance('sale')->tax(2,'.','') * 100,
                 'discount_percentage' => $request->discount_percentage,
-                'shipping_amount' => $request->shipping_amount * 100,
-                'paid_amount' => 0, // Awalnya tidak ada pembayaran
-                'total_amount' => $request->total_amount * 100,
-                'due_amount' => $request->total_amount * 100,
-                'status' => 'Pending',
-                'payment_status' => 'Unpaid',
-                'payment_method' => $request->payment_method,
-                'note' => $request->note,
-                'tax_amount' => Cart::instance('sale')->tax() * 100,
-                'discount_amount' => Cart::instance('sale')->discount() * 100,
+                'discount_amount'     => Cart::instance('sale')->discount(2,'.','') * 100,
+                'shipping_amount'     => $request->shipping_amount * 100,
+                'note'                => $request->note
             ]);
 
-            // Simpan detail produk
+            // Simpan semua detail produk dari keranjang
             foreach (Cart::instance('sale')->content() as $cart_item) {
                 SaleDetails::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $cart_item->id,
-                    'product_name' => $cart_item->name,
-                    'product_code' => $cart_item->options->code,
-                    'quantity' => $cart_item->qty,
-                    'price' => $cart_item->price * 100,
-                    'unit_price' => $cart_item->options->unit_price * 100,
-                    'sub_total' => $cart_item->options->sub_total * 100,
+                    'sale_id'                 => $sale->id,
+                    'product_id'              => $cart_item->id,
+                    'product_name'            => $cart_item->name,
+                    'product_code'            => $cart_item->options->code,
+                    'quantity'                => $cart_item->qty,
+                    'price'                   => $cart_item->price * 100,
+                    'unit_price'              => $cart_item->options->unit_price * 100,
+                    'sub_total'               => $cart_item->options->sub_total * 100,
                     'product_discount_amount' => $cart_item->options->product_discount * 100,
-                    'product_discount_type' => $cart_item->options->product_discount_type,
-                    'product_tax_amount' => $cart_item->options->product_tax * 100,
+                    'product_discount_type'   => $cart_item->options->product_discount_type,
+                    'product_tax_amount'      => $cart_item->options->product_tax * 100,
                 ]);
+                // Kurangi stok produk
                 Product::findOrFail($cart_item->id)->decrement('product_quantity', $cart_item->qty);
             }
+
+            // Hancurkan keranjang belanja SEGERA setelah detail disimpan
+            // Cart::instance('sale')->destroy();
 
             // Langkah 2: Proses pembayaran berdasarkan metode yang dipilih
             if ($request->payment_method == 'QRIS' || $request->payment_method == 'Midtrans') {
@@ -79,49 +86,102 @@ class PosController extends Controller
                 Midtrans\Config::$serverKey = config('midtrans.server_key');
                 Midtrans\Config::$isProduction = config('midtrans.is_production');
 
+                 $item_details = [];
+
+                // 1. Tambahkan setiap produk dari keranjang
+                foreach (Cart::instance('sale')->content() as $cart_item) {
+                    $item_details[] = [
+                        'id'       => $cart_item->id,
+                        'price'    => round($cart_item->price), // Harga satuan harus bulat
+                        'quantity' => $cart_item->qty,
+                        'name'     => substr($cart_item->name, 0, 50) // Nama item maks 50 karakter
+                    ];
+                }
+
+                // 2. Tambahkan Pajak (jika ada)
+                $tax = Cart::instance('sale')->tax(2, '.', ''); // Konversi ke sen
+                if ($tax > 0) {
+                    $item_details[] = [
+                        'id'       => 'TAX',
+                        'price'    => round($tax),
+                        'quantity' => 1,
+                        'name'     => 'Pajak'
+                    ];
+                }
+                $shipping_amount = $request->shipping_amount;
+                // 3. Tambahkan Ongkos Kirim (jika ada)
+                if ($shipping_amount > 0) {
+                    $item_details[] = [
+                        'id'       => 'SHIPPING',
+                        'price'    => round($shipping_amount),
+                        'quantity' => 1,
+                        'name'     => 'Ongkos Kirim'
+                    ];
+                }
+
+                // 4. Tambahkan Diskon (sebagai nilai negatif)
+                $discount_amount = Cart::instance('sale')->discount(2, '.', ''); // Konversi ke sen
+                if ($discount_amount > 0) {
+                    $item_details[] = [
+                        'id'       => 'DISCOUNT',
+                        'price'    => -round($discount_amount), // Diskon harus bernilai negatif
+                        'quantity' => 1,
+                        'name'     => 'Diskon'
+                    ];
+                }
+
                 $order_id = 'SALE-' . $sale->id . '-' . time();
                 $params = [
-                    'transaction_details' => ['order_id' => $order_id, 'gross_amount' => $total],
+                    'transaction_details' => [
+                        'order_id' => $order_id,
+                        'gross_amount' => round($request->total_amount), // Total harus dalam sen
+                    ],
+                    'item_details' => $item_details, // <-- Sertakan rincian item di sini
                     'customer_details' => ['first_name' => $sale->customer_name],
                 ];
 
                 $sale->update(['midtrans_order_id' => $order_id]);
                 $snapToken = Midtrans\Snap::getSnapToken($params);
 
-                // LANGSUNG RETURN DARI SINI
-                $respons = response()->json(['snap_token' => $snapToken]);
-            }
-            else{
+                // Langsung kembalikan respons JSON dengan Snap Token
+                return response()->json(['snap_token' => $snapToken]);
+            } else {
+                // Proses Pembayaran Manual (Cash, dll)
+                // Buat record pembayaran baru
                 SalePayment::create([
-                    'date' => now(),
-                    'reference' => 'PAY/' . $sale->reference,
-                    'amount' => $request->paid_amount * 100,
-                    'sale_id' => $sale->id,
+                    'date'           => now(),
+                    'reference'      => 'PAY/' . $sale->reference,
+                    'amount'         => $request->paid_amount * 100,
+                    'sale_id'        => $sale->id,
                     'payment_method' => $request->payment_method
                 ]);
 
-                // Update status penjualan untuk pembayaran manual
+                // Update status di record penjualan utama
                 $due_amount = $request->total_amount - $request->paid_amount;
                 $payment_status = $due_amount <= 0 ? 'Paid' : 'Partial';
 
                 $sale->update([
-                    'paid_amount' => $request->paid_amount * 100,
-                    'due_amount' => $due_amount * 100,
+                    'paid_amount'    => $request->paid_amount * 100,
+                    'due_amount'     => $due_amount * 100,
                     'payment_status' => $payment_status,
-                    'status' => 'Completed'
+                    'status'         => 'Completed'
                 ]);
 
-                // Proses Pembayaran Manual berhasil
-                Cart::instance('sale')->destroy();
                 toast('POS Sale Created!', 'success');
 
-                // Kirim URL redirect untuk cetak struk
-                $respons = response()->json(['redirect_url' => route('sales.pos.pdf', $sale->id)]);
+                // Langsung kembalikan respons JSON untuk redirect cetak struk
+                return response()->json([
+                    'print_url' => route('sales.pos.receipt', $sale->id),
+                    'redirect_url' => route('sales.index')
+                ]);
             }
         });
-        return $respons;
     }
 
+    // return response()->json([
+    //                 'print_url' => route('sales.pos.pdf', $sale->id),
+    //                 'redirect_url' => route('sales.index')
+    //             ]);
     /**
      * Method untuk menangani pembayaran manual (logika asli).
      */
@@ -200,6 +260,13 @@ class PosController extends Controller
         $sale = Sale::findOrFail($id);
 
         return view('sale::print-pos', compact('sale'));
+    }
+
+    public function printReceipt($id) {
+        $sale = Sale::findOrFail($id);
+
+        // Panggil view baru yang akan kita buat
+        return view('sale::receipt-pos', compact('sale'));
     }
 
 }

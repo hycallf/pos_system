@@ -10,7 +10,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="checkout-form" action="{{ route('app.pos.store') }}" method="POST">
+            <form id="checkout-form" action="{{ route('sales.pos.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     @if (session()->has('checkout_message'))
